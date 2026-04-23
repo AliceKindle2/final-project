@@ -16,21 +16,26 @@ The diagram shows the process of the user playing the game, giving valid answers
 
 # Setup Instructions
 
+1. Make sure python and streamlit are installed on the device.
+2. Have both files in the same folder and navigate to the folder using cd.
+3. Run the app using streamlit run app.py.
+6. Play the game by chose the difficulty, toggle the AI opponent on or off, and then guess.
 
 
 # Sample Interactions
 
-
-
+There are no ways to show the user and the AI intereacting due to them both working indepencently to produce the right answer, but the AI is influenced when the uesr enters in their own answer to move forward with the next guess and take input from the system to guess higher or lower. 
 
 # Design Decisions
 
-
+The core design of the agent is supposed to be fully independent from the user due to it's role as a competitor to the user. It is built to plan, act, and reflect on its actions, using binary search to do so. The trade off due to the binary search, the competition feels hollow due to the user and AI running differently along with AI not stressed due to focusing on binary search. 
 
 # Testing Summary 
 
-
+I tested the AI by using six different pytest. After some trial and error, the AI passed all pytests, showing that AI works well in the enivorment even when there is no user to interact with it. I learned that AI consistently works better in an idenpendent spaces, while might not being correct, it isn't stressed by taking user's prompt into consideration. 
 
 # Reflection
 
+After creating an AI agent, I have a better understanding how AI works and the best way to implement. AI working independent spaces and given a thorough structure to follow is lessed stressed than it would be if it was basing its guesses with considering the users guesses. Also it's very easy for an AI to efficient if it follows a strict system like binary search to lead it to the right answer. 
 
+If I had more time, I would develop the AI to the user's guesses into consideration so it could have more chances to be tested and become stressed due to the user potentially misleading it 

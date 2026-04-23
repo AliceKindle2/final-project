@@ -36,15 +36,19 @@ show_agent = st.sidebar.toggle("🤖 AI Opponent", value=True)
 
 def _init_game():
     st.session_state.secret = random.randint(low, high)
-    st.session_state.attempts = 0           # FIX: start at 0; incremented on submit
+    st.session_state.attempts = 0
     st.session_state.score = 0
     st.session_state.status = "playing"
     st.session_state.history = []
     st.session_state.agent = AgentOpponent(low, high)
-    # Kick off the agent's first plan+act immediately
+    # Agent plans its first guess but it stays hidden until player submits
     guess, reasoning = st.session_state.agent.plan_and_act()
     st.session_state.agent_pending_guess = guess
     st.session_state.agent_pending_reason = reasoning
+    st.session_state.agent_last_guess = None      # revealed after player submits
+    st.session_state.agent_last_outcome = None
+    st.session_state.agent_guess_revealed = False  # gate: show only after player acts
+    st.session_state.agent_won = False             # tracks if agent solved before player
 
 for key in ("secret", "attempts", "score", "status", "history", "agent"):
     if key not in st.session_state:
@@ -62,10 +66,32 @@ if st.button("New Game 🔁"):
 # ── Status gate ──────────────────────────────────────────────────────────────
 
 if st.session_state.status != "playing":
-    if st.session_state.status == "won":
-        st.success("You already won this round. Start a new game to play again.")
+    player_won = st.session_state.status == "won"
+    agent_won  = st.session_state.get("agent_won", False)
+
+    if show_agent:
+        st.divider()
+        res_col1, res_col2 = st.columns(2)
+        with res_col1:
+            if player_won:
+                st.success("You won this round!")
+            else:
+                st.error("You ran out of attempts.")
+        with res_col2:
+            if agent_won and player_won:
+                st.warning("🤝 It's a tie — you both found it!")
+            elif agent_won:
+                st.error(f"🤖 Agent wins! Solved in {st.session_state.agent.guess_count} guess(es).")
+            elif player_won and not agent_won:
+                st.success("🏆 You beat the AI!")
+            else:
+                st.info("🤖 Agent didn't solve it either — nobody wins!")
+        st.divider()
     else:
-        st.error("Game over. Start a new game to try again.")
+        if player_won:
+            st.success("You already won this round. Start a new game to play again.")
+        else:
+            st.error("Game over. Start a new game to try again.")
     st.stop()
 
 # ── Main layout: player left, agent right ────────────────────────────────────
@@ -117,14 +143,21 @@ with player_col:
                 attempt_number=st.session_state.attempts,
             )
 
-            # ── Agent also learns from the human's result (same secret) ──
+            # ── Reveal agent's pending guess now that player has submitted ──
             if show_agent and not agent.solved:
                 agent_outcome, _ = check_guess(
                     st.session_state.agent_pending_guess,
                     secret,
                 )
+                # Save what the agent guessed THIS round so we can show it
+                st.session_state.agent_last_guess = st.session_state.agent_pending_guess
+                st.session_state.agent_last_outcome = agent_outcome
+                st.session_state.agent_guess_revealed = True
+                # Agent reflects and quietly plans its NEXT guess (stays hidden)
                 agent.reflect(agent_outcome)
-                if not agent.solved:
+                if agent.solved:
+                    st.session_state.agent_won = True
+                else:
                     g, r = agent.plan_and_act()
                     st.session_state.agent_pending_guess = g
                     st.session_state.agent_pending_reason = r
@@ -157,16 +190,25 @@ if show_agent:
         if agent.solved:
             st.success(f"Agent solved it in **{agent.guess_count}** guess(es)!")
         else:
-            st.metric("Agent's current guess", st.session_state.get("agent_pending_guess", "—"))
-            st.caption(f"Reasoning: {st.session_state.get('agent_pending_reason', '')}")
-            st.progress(
-                int(agent.progress_pct),
-                text=f"Search space narrowed: {agent.progress_pct}%"
+            # Show "calculating" until the player submits their first guess
+            if not st.session_state.get("agent_guess_revealed"):
+                st.caption("🤔 Calculating best guess...")
+            else:
+                st.caption("🤔 Calculating next guess...")
+
+        # Show the agent's previous guesses (revealed ones only)
+        act_lines = [l for l in agent.log if l.startswith("[ACT]")]
+        # Hide the most recent ACT if the agent hasn't been revealed yet this round
+        if not agent.solved:
+            act_lines = act_lines[:-1]  # last one is the pending (hidden) guess
+
+        if act_lines:
+            st.caption("Previous guesses:")
+            guesses_display = " → ".join(
+                l.split(":")[1].strip() if ":" in l else "?"
+                for l in act_lines
             )
-            st.caption(
-                f"Range remaining: [{agent.low}, {agent.high}] "
-                f"({agent.range_size} values)"
-            )
+            st.caption(guesses_display)
 
         with st.expander("🧠 Agent reasoning chain"):
             for line in agent.log:
@@ -179,10 +221,6 @@ if show_agent:
                     st.warning(line)
                 else:
                     st.caption(line)
-
-        st.caption(
-            f"Guess {agent.guess_count}/{agent.max_guesses} max theoretical guesses"
-        )
 
 # ── Debug expander ────────────────────────────────────────────────────────────
 

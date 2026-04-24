@@ -1,6 +1,6 @@
 # Limitations and Biases of the System:
 
-The AI is limited due to its nature as a guessing game AI, having a range of numbers to correctly guess and choosing the right algorithm to guess the correct one. I noticed while playing the game mulitple times with the AI it has a set pattern it follows. It always guesses 50 at first then 25 or 75 when it recieves the first hint. After that, it typically chooses between odd numbers in it's guesses probably due to the range shortening, the computed best guess is always odd. It also cannot move forward with the guessing game until the user answers. 
+The AI is limited due to its nature as a guessing game AI, having a range of numbers to correctly guess and choosing the right algorithm to guess the correct one. I noticed while playing the game mulitple times with the AI it has a set pattern it follows. It always guesses 50 at first then 25 or 75 when it recieves the first hint. After that, it typically switches odd to even to odd numbers in it's guesses probably due to the range shortening, the switching due to it switching from an odd to an even number itself. It also cannot move forward with the guessing game until the user answers. 
 
 # AI being Misued:
 
